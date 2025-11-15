@@ -47,8 +47,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-
     
-    - name: Install maturin
+    - name: Create virtual environment
+      run: python -m venv .venv
+    
+    - name: Install dependencies
       run: |
+        source .venv/bin/activate || .venv\Scripts\activate
         python -m pip install --upgrade pip
         pip install maturin pytest
     
@@ -59,13 +63,18 @@ jobs:
       run: cargo clippy -- -D warnings
     
     - name: Build and install module
-      run: maturin develop
+      run: |
+        source .venv/bin/activate || .venv\Scripts\activate
+        maturin develop
     
     - name: Run Python example
-      run: python example.py
+      run: |
+        source .venv/bin/activate || .venv\Scripts\activate
+        python example.py
     
     - name: Create and run tests
       run: |
+        source .venv/bin/activate || .venv\Scripts\activate
         cat > test_module.py << 'EOF'
         import rust_python_example
         
@@ -115,8 +124,10 @@ jobs:
         EOF
         pytest test_module.py -v
     
-    - name: Build release wheel
-      run: maturin build --release
+    - name: Build release wheel  
+      run: |
+        source .venv/bin/activate || .venv\Scripts\activate
+        maturin build --release
     
     - name: Upload wheels
       uses: actions/upload-artifact@v4
