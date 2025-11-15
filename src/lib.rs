@@ -14,7 +14,7 @@ fn multiply(a: f64, b: f64) -> PyResult<f64> {
 
 #[pyfunction]
 fn greet(name: &str) -> PyResult<String> {
-    Ok(format!("Hello, {}! From Rust with love 🦀", name))
+    Ok(format!("Hello, {}! From Rust with love", name))
 }
 
 #[pyclass]

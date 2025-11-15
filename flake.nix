@@ -54,7 +54,7 @@
             # Ensure Python can find the built module
             export PYTHONPATH="$PWD:$PYTHONPATH"
             
-            echo "🦀 PyO3 Rust-Python Development Environment (Flake)"
+            echo "PyO3 Rust-Python Development Environment (Flake)"
             echo "===================================================="
             echo "Python: $(python --version)"
             echo "Rust:   $(rustc --version)"
