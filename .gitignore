@@ -1,0 +1,39 @@
+# Rust
+/target
+Cargo.lock
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+*.so
+*.pyd
+.venv/
+venv/
+*.whl
+
+# Nix
+result
+result-*
+.direnv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+build/
+*.egg
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environment
+.env
+.envrc.local

@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          # Exclude some combinations to reduce CI time
+          - os: windows-latest
+            python-version: "3.9"
+          - os: windows-latest
+            python-version: "3.10"
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Install maturin
+      run: |
+        python -m pip install --upgrade pip
+        pip install maturin pytest
+    
+    - name: Check Rust formatting
+      run: cargo fmt -- --check
+    
+    - name: Run Clippy
+      run: cargo clippy -- -D warnings
+    
+    - name: Build and install module
+      run: maturin develop
+    
+    - name: Run Python example
+      run: python example.py
+    
+    - name: Create and run tests
+      run: |
+        cat > test_module.py << 'EOF'
+        import rust_python_example
+        
+        def test_add():
+            assert rust_python_example.add(2, 3) == 5
+            assert rust_python_example.add(-1, 1) == 0
+            assert rust_python_example.add(0, 0) == 0
+        
+        def test_multiply():
+            assert rust_python_example.multiply(2.5, 4.0) == 10.0
+            assert rust_python_example.multiply(0.0, 100.0) == 0.0
+        
+        def test_greet():
+            result = rust_python_example.greet("World")
+            assert "Hello, World!" in result
+            assert "Rust" in result
+        
+        def test_process_list():
+            assert rust_python_example.process_list([1, 2, 3]) == [2, 4, 6]
+            assert rust_python_example.process_list([]) == []
+            assert rust_python_example.process_list([0]) == [0]
+        
+        def test_counter():
+            counter = rust_python_example.Counter()
+            assert counter.get_count() == 0
+            
+            counter.increment()
+            assert counter.get_count() == 1
+            
+            counter.increment()
+            counter.increment()
+            assert counter.get_count() == 3
+            
+            counter.decrement()
+            assert counter.get_count() == 2
+            
+            counter.reset()
+            assert counter.get_count() == 0
+        
+        if __name__ == "__main__":
+            test_add()
+            test_multiply()
+            test_greet()
+            test_process_list()
+            test_counter()
+            print("All tests passed!")
+        EOF
+        pytest test_module.py -v
+    
+    - name: Build release wheel
+      run: maturin build --release
+    
+    - name: Upload wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: target/wheels/*.whl
+
+  test-nix:
+    name: Test with Nix
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v24
+      with:
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    
+    - name: Check flake
+      run: nix flake check
+    
+    - name: Build with Nix shell
+      run: |
+        nix-shell --run "cargo build"
+        nix-shell --run "cargo test"
+    
+    - name: Build with Nix flake
+      run: |
+        nix develop --command cargo build
+        nix develop --command cargo test
