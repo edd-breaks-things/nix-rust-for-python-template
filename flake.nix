@@ -42,6 +42,15 @@
             # Set Python for PyO3
             export PYO3_PYTHON="${pkgs.python311}/bin/python"
             
+            # Create and activate a virtual environment if it doesn't exist
+            if [ ! -d .venv ]; then
+              echo "Creating virtual environment..."
+              ${pkgs.python311}/bin/python -m venv .venv
+            fi
+            
+            # Activate the virtual environment
+            source .venv/bin/activate
+            
             # Ensure Python can find the built module
             export PYTHONPATH="$PWD:$PYTHONPATH"
             

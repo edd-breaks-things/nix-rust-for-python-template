@@ -144,5 +144,4 @@ jobs:
       run: |
         nix develop --command cargo build
         nix develop --command cargo test
-        nix develop --command maturin develop
-        nix develop --command python example.py
+        nix develop --command bash -c "python -m venv .venv && source .venv/bin/activate && maturin develop && python example.py"
