@@ -1,6 +1,6 @@
 # Nix + Rust + Python Template with PyO3
 
-[![CI](https://github.com/edd-builds-things/nix-rust-for-python-template/actions/workflows/ci.yml/badge.svg)](https://github.com/edd-builds-things/nix-rust-for-python-template/actions/workflows/ci.yml)
+[![CI](https://github.com/edd-breaks-things/nix-rust-for-python-template/actions/workflows/ci.yml/badge.svg)](https://github.com/edd-breaks-things/nix-rust-for-python-template/actions/workflows/ci.yml)
 
 A simple template for developing Rust extensions for Python using PyO3 and Nix.
 
