@@ -50,9 +50,17 @@ jobs:
     - name: Create virtual environment
       run: python -m venv .venv
     
-    - name: Install dependencies
+    - name: Install dependencies (Unix)
+      if: runner.os != 'Windows'
       run: |
-        source .venv/bin/activate || .venv\Scripts\activate
+        source .venv/bin/activate
+        python -m pip install --upgrade pip
+        pip install maturin pytest
+    
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\activate
         python -m pip install --upgrade pip
         pip install maturin pytest
     
@@ -62,19 +70,34 @@ jobs:
     - name: Run Clippy
       run: cargo clippy -- -D warnings
     
-    - name: Build and install module
+    - name: Build and install module (Unix)
+      if: runner.os != 'Windows'
       run: |
-        source .venv/bin/activate || .venv\Scripts\activate
+        source .venv/bin/activate
         maturin develop
     
-    - name: Run Python example
+    - name: Build and install module (Windows)
+      if: runner.os == 'Windows'
       run: |
-        source .venv/bin/activate || .venv\Scripts\activate
+        .venv\Scripts\activate
+        maturin develop
+    
+    - name: Run Python example (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
         python example.py
     
-    - name: Create and run tests
+    - name: Run Python example (Windows)
+      if: runner.os == 'Windows'
       run: |
-        source .venv/bin/activate || .venv\Scripts\activate
+        .venv\Scripts\activate
+        python example.py
+    
+    - name: Create and run tests (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
         cat > test_module.py << 'EOF'
         import rust_python_example
         
@@ -124,9 +147,69 @@ jobs:
         EOF
         pytest test_module.py -v
     
-    - name: Build release wheel  
+    - name: Create and run tests (Windows)
+      if: runner.os == 'Windows'
       run: |
-        source .venv/bin/activate || .venv\Scripts\activate
+        .venv\Scripts\activate
+        @"
+        import rust_python_example
+        
+        def test_add():
+            assert rust_python_example.add(2, 3) == 5
+            assert rust_python_example.add(-1, 1) == 0
+            assert rust_python_example.add(0, 0) == 0
+        
+        def test_multiply():
+            assert rust_python_example.multiply(2.5, 4.0) == 10.0
+            assert rust_python_example.multiply(0.0, 100.0) == 0.0
+        
+        def test_greet():
+            result = rust_python_example.greet("World")
+            assert "Hello, World!" in result
+            assert "Rust" in result
+        
+        def test_process_list():
+            assert rust_python_example.process_list([1, 2, 3]) == [2, 4, 6]
+            assert rust_python_example.process_list([]) == []
+            assert rust_python_example.process_list([0]) == [0]
+        
+        def test_counter():
+            counter = rust_python_example.Counter()
+            assert counter.get_count() == 0
+            
+            counter.increment()
+            assert counter.get_count() == 1
+            
+            counter.increment()
+            counter.increment()
+            assert counter.get_count() == 3
+            
+            counter.decrement()
+            assert counter.get_count() == 2
+            
+            counter.reset()
+            assert counter.get_count() == 0
+        
+        if __name__ == "__main__":
+            test_add()
+            test_multiply()
+            test_greet()
+            test_process_list()
+            test_counter()
+            print("All tests passed!")
+        "@ | Out-File -FilePath test_module.py -Encoding UTF8
+        pytest test_module.py -v
+    
+    - name: Build release wheel (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
+        maturin build --release
+    
+    - name: Build release wheel (Windows)
+      if: runner.os == 'Windows'  
+      run: |
+        .venv\Scripts\activate
         maturin build --release
     
     - name: Upload wheels
